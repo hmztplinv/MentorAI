@@ -16,10 +16,10 @@ def create_tables():
 def init_vector_db():
     """Initialize Chroma vector database"""
     # Create directory if it doesn't exist
-    os.makedirs(settings.CHROMA_DB_DIR, exist_ok=True)
+    os.makedirs(settings.chromadb_DIR, exist_ok=True)
     
     # Initialize Chroma client
-    client = chromadb.PersistentClient(path=settings.CHROMA_DB_DIR)
+    client = chromadb.PersistentClient(path=settings.chromadb_DIR)
     
     # Create collections for long-term memory if they don't exist
     try:

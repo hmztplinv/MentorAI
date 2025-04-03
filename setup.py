@@ -25,7 +25,7 @@ def create_directories():
         "app/therapists",
         "app/utils",
         "tests",
-        "chroma_db"
+        "chromadb"
     ]
     
     for directory in directories:

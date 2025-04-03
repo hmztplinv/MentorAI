@@ -11,7 +11,7 @@ class Settings(BaseModel):
     SQLITE_DB_PATH: str = "sqlite:///./app.db"
     
     # Vector DB (Chroma)
-    CHROMA_DB_DIR: str = "./chroma_db"
+    chromadb_DIR: str = "./chromadb"
     
     # Available languages
     LANGUAGES: List[str] = ["en", "tr"]
@@ -47,9 +47,11 @@ class Settings(BaseModel):
     
     # Safety settings
     CRISIS_KEYWORDS: List[str] = [
-        "suicide", "kill myself", "harm myself", "end my life",
-        "intihar", "kendimi öldürmek", "canıma kıymak"
-    ]
+    "suicide", "kill myself", "harm myself", "end my life",
+    "intihar", "kendimi öldürmek", "canıma kıymak", 
+    "intihar etmek", "intihar etmeyi", "kendime zarar",
+    "yaşamak istemiyorum", "ölmek istiyorum", "düşünüyorum"
+]
     
     # Emergency contact info (should be configured by user)
     EMERGENCY_CONTACTS: Dict[str, str] = {
