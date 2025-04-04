@@ -23,10 +23,14 @@ class Settings(BaseModel):
     
     # Whisper settings
     WHISPER_MODEL: str = "base"
-    
+
+    # ollama settings
+
+    OLLAMA_TIMEOUT: int = 45
+    OLLAMA_NUM_PREDICT: int = 200
     # Memory settings
-    SHORT_TERM_MEMORY_LENGTH: int = 10  # Number of messages to keep in conversation
-    SUMMARY_THRESHOLD: int = 20  # When to create a summary
+    SHORT_TERM_MEMORY_LENGTH: int = 5  # Number of messages to keep in conversation
+    SUMMARY_THRESHOLD: int = 10  # When to create a summary
     
     # Therapy approaches
     THERAPY_APPROACHES: List[str] = [

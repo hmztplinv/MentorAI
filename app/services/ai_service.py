@@ -145,17 +145,18 @@ def get_long_term_memory(db: Session, session_id: int, user_id: int) -> List[str
 
 def store_in_long_term_memory(db: Session, session_id: int, user_id: int, text: str) -> bool:
     """
-    Store important information in long-term memory (vector DB)
+    Store important information in long-term memory (vector DB) with unique IDs
     """
     try:
         # Skip if text is too short
         if len(text) < 50:
             return False
         
-        # İmport düzeltmesi
+        # İmport gerekli modüller
         import chromadb
-        from langchain_community.embeddings import HuggingFaceEmbeddings
         from langchain_text_splitters import RecursiveCharacterTextSplitter
+        import uuid
+        from datetime import datetime
         
         # Initialize text splitter
         text_splitter = RecursiveCharacterTextSplitter(
@@ -167,6 +168,10 @@ def store_in_long_term_memory(db: Session, session_id: int, user_id: int, text: 
         # Split text into chunks
         chunks = text_splitter.split_text(text)
         
+        # Çok uzun metinlerde, ilk 6 parçayı al
+        if len(chunks) > 6:
+            chunks = chunks[:6]
+        
         # Initialize Chroma client
         client = chromadb.PersistentClient(path=settings.chromadb_DIR)
         
@@ -176,18 +181,41 @@ def store_in_long_term_memory(db: Session, session_id: int, user_id: int, text: 
         except:
             collection = client.create_collection("user_memories")
         
-        # Add chunks to memory
+        # Benzersiz ID'ler oluştur - timestamp ve uuid kullanarak
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_ids = [
+            f"mem_{user_id}_{session_id}_{timestamp}_{uuid.uuid4().hex[:8]}_{i}" 
+            for i in range(len(chunks))
+        ]
+        
+        # Metadatayı daha detaylı oluştur
+        metadatas = [
+            {
+                "user_id": str(user_id), 
+                "session_id": str(session_id),
+                "timestamp": timestamp,
+                "chunk_index": str(i),
+                "total_chunks": str(len(chunks))
+            } 
+            for i in range(len(chunks))
+        ]
+        
+        # Add chunks to memory with unique IDs
         collection.add(
             documents=chunks,
-            metadatas=[{"user_id": str(user_id), "session_id": str(session_id)} for _ in chunks],
-            ids=[f"mem_{user_id}_{session_id}_{i}" for i in range(len(chunks))]
+            metadatas=metadatas,
+            ids=unique_ids
         )
         
         print(f"Successfully stored {len(chunks)} chunks in long-term memory")
         return True
     
     except Exception as e:
+        # Daha detaylı hata mesajı
+        import traceback
+        error_trace = traceback.format_exc()
         print(f"Error storing in vector db: {str(e)}")
+        print(f"Traceback: {error_trace}")
         return False
 
 
@@ -197,7 +225,7 @@ def generate_ai_response(
     crisis_mode: bool = False
 ) -> str:
     """
-    Generate AI response using the Phi-4 model
+    Generate AI response using the Phi-4 model with optimized performance
     """
     # Get conversation context
     context = get_conversation_context(db, session_id=session_id)
@@ -216,13 +244,21 @@ def generate_ai_response(
     # Format messages for API call
     messages = [{"role": "system", "content": system_message}]
     
-    # Add conversation history
-    for msg in context.get("messages", []):
-        messages.append(msg)
+    # Add conversation history - optimize for token count and performance
+    conversation_messages = context.get("messages", [])
     
-    # Add memory context if available
+    # Sadece son 3 mesajı kullan (performans için)
+    if len(conversation_messages) > 3:
+        optimized_messages = conversation_messages[-3:]
+    else:
+        optimized_messages = conversation_messages
+    
+    messages.extend(optimized_messages)
+    
+    # Add memory context if available - limit to most relevant memories
     if "long_term_memory" in context and context["long_term_memory"]:
-        memory_content = "Previous information about the user:\n" + "\n".join(context["long_term_memory"])
+        memory_points = context["long_term_memory"][:1]  # Sadece en alakalı hafıza noktası
+        memory_content = "Kullanıcı hakkında önceki bilgiler:\n" + "\n".join(memory_points)
         messages.append({"role": "system", "content": memory_content})
     
     # Debug bilgisi
@@ -236,7 +272,14 @@ def generate_ai_response(
         api_request = {
             "model": settings.MODEL_NAME,
             "messages": messages,
-            "stream": False  # Stream modunu açıkça kapatıyoruz
+            "stream": False,  # Stream modunu açıkça kapatıyoruz
+            "options": {
+                "num_predict": 150,     # Daha kısa yanıtlar
+                "temperature": 0.7,     # Daha az yaratıcı ama hızlı
+                "top_p": 0.9,           # Daha odaklı yanıtlar
+                "top_k": 40,            # Token seçimini sınırla
+                "seed": 42              # Tutarlı yanıtlar için
+            }
         }
         
         print(f"Ollama API isteği: {json.dumps(api_request, ensure_ascii=False)[:200]}...")
@@ -244,7 +287,7 @@ def generate_ai_response(
         response = requests.post(
             f"{settings.OLLAMA_API_BASE}/chat",
             json=api_request,
-            timeout=120  # Zaman aşımını 2 dakikaya çıkaralım
+            timeout=45  # Timeout süresini 120'den 45 saniyeye düşürdük
         )
         
         if response.status_code == 200:
@@ -277,15 +320,23 @@ def generate_ai_response(
                     ai_response = "Boş yanıt alındı."
             
             # Store important responses in long-term memory
-            if len(ai_response) > 100:  # Only store substantial responses
-                user_id = context.get("session", {}).get("user_id")
-                store_in_long_term_memory(db, session_id, user_id, ai_response)
+            # Sadece anlamlı uzunlukta yanıtları hafızaya al
+            if len(ai_response) > 100 and not crisis_mode:  # Kriz modunda hafıza depolamayı atla
+                user_id = context.get("session", {}).get("user_id", 0)
+                if user_id > 0:  # Geçerli kullanıcı ID'si varsa
+                    try:
+                        store_in_long_term_memory(db, session_id, user_id, ai_response)
+                    except Exception as e:
+                        print(f"Hafıza depolamada hata: {str(e)}")
             
             return ai_response
         else:
             print(f"API Hatası: {response.status_code} - {response.text}")
             return get_fallback_response(context.get("user", {}).get("language", "en"))
     
+    except requests.exceptions.Timeout:
+        print("API isteği zaman aşımına uğradı.")
+        return get_fallback_response(context.get("user", {}).get("language", "en"))
     except Exception as e:
         print(f"Error generating AI response: {str(e)}")
         return get_fallback_response(context.get("user", {}).get("language", "en"))
