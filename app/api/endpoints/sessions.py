@@ -3,64 +3,70 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.base import get_db
-from app.schemas.user import User, UserCreate, UserUpdate
-from app.services.user_service import get_user, get_users, create_user, update_user, delete_user
+from app.schemas.session import Session, SessionCreate, SessionUpdate, SessionWithMessages
+from app.services.session_service import get_session, get_sessions_by_user, create_session, update_session, end_session, delete_session
 
 router = APIRouter()
 
-
-@router.get("/", response_model=List[User])
-def read_users(
+@router.get("/", response_model=List[Session])
+def read_sessions(
+    user_id: int,
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db)
 ):
-    users = get_users(db, skip=skip, limit=limit)
-    return users
+    sessions = get_sessions_by_user(db, user_id=user_id, skip=skip, limit=limit)
+    return sessions
 
-
-@router.post("/", response_model=User)
-def create_new_user(
-    user: UserCreate, 
+@router.post("/", response_model=Session)
+def create_new_session(
+    session: SessionCreate, 
     db: Session = Depends(get_db)
 ):
-    db_user = get_user(db, username=user.username)
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    return create_user(db=db, user=user)
+    return create_session(db=db, session=session)
 
-
-@router.get("/{user_id}", response_model=User)
-def read_user(
-    user_id: int, 
+@router.get("/{session_id}", response_model=SessionWithMessages)
+def read_session(
+    session_id: int, 
     db: Session = Depends(get_db)
 ):
-    db_user = get_user(db, user_id=user_id)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    db_session = get_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return db_session
 
-
-@router.put("/{user_id}", response_model=User)
-def update_user_data(
-    user_id: int, 
-    user_data: UserUpdate, 
+@router.put("/{session_id}", response_model=Session)
+def update_session_data(
+    session_id: int, 
+    session_data: SessionUpdate, 
     db: Session = Depends(get_db)
 ):
-    db_user = get_user(db, user_id=user_id)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    updated_user = update_user(db=db, user_id=user_id, user_data=user_data)
-    return updated_user
+    db_session = get_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    updated_session = update_session(db=db, session_id=session_id, session_data=session_data)
+    return updated_session
 
-
-@router.delete("/{user_id}", response_model=User)
-def delete_user_data(
-    user_id: int, 
+@router.put("/{session_id}/end", response_model=Session)
+def end_session_route(
+    session_id: int,
     db: Session = Depends(get_db)
 ):
-    db_user = get_user(db, user_id=user_id)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    deleted_user = delete_user(db=db, user_id=user_id)
-    return deleted_user
+    db_session = get_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if db_session.ended_at is not None:
+        raise HTTPException(status_code=400, detail="Session already ended")
+    ended_session = end_session(db=db, session_id=session_id)
+    return ended_session
+
+@router.delete("/{session_id}", response_model=Session)
+def delete_session_data(
+    session_id: int, 
+    db: Session = Depends(get_db)
+):
+    db_session = get_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    deleted_session = delete_session(db=db, session_id=session_id)
+    return deleted_session
