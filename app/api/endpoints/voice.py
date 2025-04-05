@@ -21,10 +21,10 @@ async def transcribe_voice(
     """
     Transcribe uploaded audio file using Whisper
     """
-    if not file.filename.endswith((".wav", ".mp3", ".ogg", ".flac", ".m4a")):
+    if not file.filename.endswith((".wav", ".mp3", ".ogg", ".flac", ".m4a", ".webm")):
         raise HTTPException(
             status_code=400, 
-            detail="Unsupported audio format. Please upload .wav, .mp3, .ogg, .flac, or .m4a files"
+            detail="Unsupported audio format. Please upload .wav, .mp3, .ogg, .flac, .m4a, or .webm files"
         )
     
     # Save uploaded file temporarily

@@ -124,3 +124,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+#npx tailwindcss init -p
