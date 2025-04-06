@@ -272,12 +272,12 @@ def generate_ai_response(
         api_request = {
             "model": settings.MODEL_NAME,
             "messages": messages,
-            "stream": False,  # Stream modunu açıkça kapatıyoruz
+            "stream": False,  
             "options": {
-                "num_predict": 150,     # Daha kısa yanıtlar
+                "num_predict": 500,     # Daha kısa yanıtlar
                 "temperature": 0.7,     # Daha az yaratıcı ama hızlı
                 "top_p": 0.9,           # Daha odaklı yanıtlar
-                "top_k": 40,            # Token seçimini sınırla
+                "top_k": 50,            # Token seçimini sınırla
                 "seed": 42              # Tutarlı yanıtlar için
             }
         }
@@ -287,7 +287,7 @@ def generate_ai_response(
         response = requests.post(
             f"{settings.OLLAMA_API_BASE}/chat",
             json=api_request,
-            timeout=45  # Timeout süresini 120'den 45 saniyeye düşürdük
+            timeout=120  
         )
         
         if response.status_code == 200:
