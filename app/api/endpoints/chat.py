@@ -21,6 +21,7 @@ async def send_message(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
     
+    
     # Check if session has ended
     if session.ended_at is not None:
         raise HTTPException(status_code=400, detail="Session has ended")

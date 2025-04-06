@@ -21,13 +21,13 @@ def check_for_crisis(text: str) -> Tuple[bool, str]:
     """
     text_lower = text.lower()
     
-    # Detect language (simple approach, for production use a proper language detector)
+
     language = "en"
     turkish_chars = re.findall(r'[çğıöşüÇĞİÖŞÜ]', text)
     if turkish_chars:
         language = "tr"
     
-    # Check for crisis keywords
+
     for keyword in settings.CRISIS_KEYWORDS:
         if keyword in text_lower:
             return True, language
@@ -43,24 +43,24 @@ def get_conversation_context(db: Session, session_id: int) -> Dict[str, Any]:
     - Recent messages
     - Long-term memory (from vector DB)
     """
-    # Get session
+
     session = get_session(db, session_id=session_id)
     if not session:
         return {"error": "Session not found"}
     
-    # Get user
+
     user = get_user(db, user_id=session.user_id)
     if not user:
         return {"error": "User not found"}
     
-    # Get recent messages
+
     messages = get_session_messages(
         db, 
         session_id=session_id, 
         limit=settings.SHORT_TERM_MEMORY_LENGTH
     )
     
-    # Format messages for context
+
     formatted_messages = []
     for msg in messages:
         formatted_messages.append({
@@ -68,11 +68,11 @@ def get_conversation_context(db: Session, session_id: int) -> Dict[str, Any]:
             "content": msg.content
         })
     
-    # Get therapy approach prompt
+
     therapy_approach = session.therapy_approach
     therapy_prompt = get_therapy_approach_prompt(therapy_approach, user.language)
     
-    # Create context
+
     context = {
         "user": {
             "username": user.username,
@@ -89,7 +89,7 @@ def get_conversation_context(db: Session, session_id: int) -> Dict[str, Any]:
         "therapy_prompt": therapy_prompt
     }
     
-    # Add long-term memory if available
+
     try:
         memory_context = get_long_term_memory(db, session_id, user.id)
         if memory_context:
@@ -104,7 +104,7 @@ def get_long_term_memory(db: Session, session_id: int, user_id: int) -> List[str
     """
     Retrieve relevant long-term memories from vector DB
     """
-    # Get the last message to use as query
+
     messages = get_session_messages(db, session_id=session_id, limit=1)
     if not messages:
         return []
@@ -112,13 +112,13 @@ def get_long_term_memory(db: Session, session_id: int, user_id: int) -> List[str
     last_message = messages[0].content
     
     try:
-        # İmport düzeltmesi: 'chromadb' değil 'chromadb' kullanmalıyız
+
         import chromadb
         
-        # Initialize Chroma client
+
         client = chromadb.PersistentClient(path=settings.chromadb_DIR)
         
-        # Check if collection exists, if not return empty list
+
         try:
             collection = client.get_collection("user_memories")
         except:
@@ -126,14 +126,14 @@ def get_long_term_memory(db: Session, session_id: int, user_id: int) -> List[str
             collection = client.create_collection("user_memories")
             return []
         
-        # Query for relevant memories
+
         results = collection.query(
             query_texts=[last_message],
             n_results=3,
             where={"user_id": str(user_id)}
         )
         
-        # Return documents if found
+
         if results and "documents" in results and len(results["documents"]) > 0:
             return results["documents"][0]  # First query results
         
@@ -148,47 +148,47 @@ def store_in_long_term_memory(db: Session, session_id: int, user_id: int, text: 
     Store important information in long-term memory (vector DB) with unique IDs
     """
     try:
-        # Skip if text is too short
+
         if len(text) < 50:
             return False
         
-        # İmport gerekli modüller
+
         import chromadb
         from langchain_text_splitters import RecursiveCharacterTextSplitter
         import uuid
         from datetime import datetime
         
-        # Initialize text splitter
+
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
             chunk_overlap=50,
             separators=["\n\n", "\n", ". ", " ", ""]
         )
         
-        # Split text into chunks
+
         chunks = text_splitter.split_text(text)
         
-        # Çok uzun metinlerde, ilk 6 parçayı al
+
         if len(chunks) > 6:
             chunks = chunks[:6]
         
-        # Initialize Chroma client
+
         client = chromadb.PersistentClient(path=settings.chromadb_DIR)
         
-        # Check if collection exists, if not create it
+
         try:
             collection = client.get_collection("user_memories")
         except:
             collection = client.create_collection("user_memories")
         
-        # Benzersiz ID'ler oluştur - timestamp ve uuid kullanarak
+
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         unique_ids = [
             f"mem_{user_id}_{session_id}_{timestamp}_{uuid.uuid4().hex[:8]}_{i}" 
             for i in range(len(chunks))
         ]
         
-        # Metadatayı daha detaylı oluştur
+
         metadatas = [
             {
                 "user_id": str(user_id), 
@@ -200,7 +200,7 @@ def store_in_long_term_memory(db: Session, session_id: int, user_id: int, text: 
             for i in range(len(chunks))
         ]
         
-        # Add chunks to memory with unique IDs
+
         collection.add(
             documents=chunks,
             metadatas=metadatas,
@@ -211,7 +211,7 @@ def store_in_long_term_memory(db: Session, session_id: int, user_id: int, text: 
         return True
     
     except Exception as e:
-        # Daha detaylı hata mesajı
+
         import traceback
         error_trace = traceback.format_exc()
         print(f"Error storing in vector db: {str(e)}")
@@ -227,13 +227,13 @@ def generate_ai_response(
     """
     Generate AI response using the Phi-4 model with optimized performance
     """
-    # Get conversation context
+
     context = get_conversation_context(db, session_id=session_id)
     
-    # Create system message based on therapy approach
+
     system_message = context.get("therapy_prompt", "")
     
-    # Add crisis handling if needed
+
     if crisis_mode:
         language = context.get("user", {}).get("language", "en")
         if language == "tr":
@@ -241,44 +241,44 @@ def generate_ai_response(
         else:
             system_message += "\n\nThe user may be in crisis. Stay calm, be empathetic, and encourage them to seek professional help. I will provide emergency numbers, but first try to help them calm down."
     
-    # Format messages for API call
+
     messages = [{"role": "system", "content": system_message}]
     
-    # Add conversation history - optimize for token count and performance
+
     conversation_messages = context.get("messages", [])
     
-    # Sadece son 3 mesajı kullan (performans için)
-    if len(conversation_messages) > 3:
-        optimized_messages = conversation_messages[-3:]
+
+    if len(conversation_messages) > 25:
+        optimized_messages = conversation_messages[-25:]
     else:
         optimized_messages = conversation_messages
     
     messages.extend(optimized_messages)
     
-    # Add memory context if available - limit to most relevant memories
+
     if "long_term_memory" in context and context["long_term_memory"]:
         memory_points = context["long_term_memory"][:1]  # Sadece en alakalı hafıza noktası
         memory_content = "Kullanıcı hakkında önceki bilgiler:\n" + "\n".join(memory_points)
         messages.append({"role": "system", "content": memory_content})
     
-    # Debug bilgisi
+
     print(f"API isteği gönderiliyor: {settings.OLLAMA_API_BASE}/chat")
     print(f"Model: {settings.MODEL_NAME}")
     
     import json  # JSON modülünü import et
     
-    # Set up API request to Ollama
+
     try:
         api_request = {
             "model": settings.MODEL_NAME,
             "messages": messages,
             "stream": False,  
             "options": {
-                "num_predict": 500,     # Daha kısa yanıtlar
-                "temperature": 0.7,     # Daha az yaratıcı ama hızlı
-                "top_p": 0.9,           # Daha odaklı yanıtlar
-                "top_k": 50,            # Token seçimini sınırla
-                "seed": 42              # Tutarlı yanıtlar için
+                "num_predict": 600,     # Daha kısa yanıtlar
+                "temperature": 0.85,     # Daha az yaratıcı ama hızlı
+                "top_p": 0.95,           # Daha odaklı yanıtlar
+                "top_k": 80,            # Token seçimini sınırla
+                "seed": None              # Tutarlı yanıtlar için
             }
         }
         
@@ -292,16 +292,16 @@ def generate_ai_response(
         
         if response.status_code == 200:
             try:
-                # Yanıtı işleme
+
                 result = response.json()
                 ai_response = result.get("message", {}).get("content", "")
             except json.JSONDecodeError:
-                # Stream yanıtını işleme
+
                 print("JSON ayrıştırma hatası, alternatif işleme yapılıyor")
-                # Son tamamlanmış yanıtı bulmaya çalışalım
+
                 text = response.text.strip()
                 if text:
-                    # Son kapanan JSON nesnesini arayalım
+
                     last_json_end = text.rfind("}")
                     if last_json_end > 0:
                         last_json_start = text.rfind("{", 0, last_json_end)
@@ -319,8 +319,8 @@ def generate_ai_response(
                 else:
                     ai_response = "Boş yanıt alındı."
             
-            # Store important responses in long-term memory
-            # Sadece anlamlı uzunlukta yanıtları hafızaya al
+
+
             if len(ai_response) > 100 and not crisis_mode:  # Kriz modunda hafıza depolamayı atla
                 user_id = context.get("session", {}).get("user_id", 0)
                 if user_id > 0:  # Geçerli kullanıcı ID'si varsa
