@@ -18,20 +18,17 @@ def test_ai_service():
     """
     print("AI Servisi Testi Başlatılıyor...")
     
-    # Veritabanı bağlantısı oluştur
     db = SessionLocal()
     
     try:
-        # Test kullanıcısı oluştur
         test_user = UserCreate(
-            username=f"test_user_{uuid.uuid4().hex[:6]}", # Benzersiz kullanıcı adı
+            username=f"test_user_{uuid.uuid4().hex[:6]}", 
             language="tr",
             preferred_therapy_approach="cbt"
         )
         db_user = create_user(db, test_user)
         print(f"Test kullanıcısı oluşturuldu: {db_user.username}")
         
-        # Test oturumu oluştur
         test_session = SessionCreate(
             user_id=db_user.id,
             therapy_approach="cbt",
@@ -40,7 +37,6 @@ def test_ai_service():
         db_session = create_session(db, test_session)
         print(f"Test oturumu oluşturuldu: {db_session.title}")
         
-        # Kriz algılama testi
         print("\nKriz Algılama Testi:")
         test_text = "Bugün kendimi çok kötü hissediyorum."
         crisis, lang = check_for_crisis(test_text)
@@ -52,7 +48,6 @@ def test_ai_service():
         print(f"Metin: '{test_text}'")
         print(f"Kriz algılandı mı: {crisis}, Dil: {lang}")
         
-        # AI yanıt üretme testi
         print("\nAI Yanıt Üretme Testi:")
         test_prompt = "Merhaba, bugün biraz endişeliyim."
         
