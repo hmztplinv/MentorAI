@@ -2,7 +2,7 @@ import sys
 import os
 import time
 import uuid
-# Projenin ana dizinini path'e ekle
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.db.base import SessionLocal

@@ -1,4 +1,3 @@
-# tests/test_whisper_simple.py adlı yeni bir dosya oluşturun
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -8,11 +7,9 @@ def test_whisper_direct():
     """Whisper'ı doğrudan test et"""
     print("Whisper doğrudan test ediliyor...")
     
-    # Whisper modelini yükle
     model = whisper.load_model("base")
     print("Model yüklendi")
     
-    # Bir test dosyası oluştur (1 saniye sessizlik)
     test_file = "test_audio.wav"
     import wave
     with wave.open(test_file, 'wb') as wf:
@@ -24,7 +21,6 @@ def test_whisper_direct():
     print(f"Test dosyası oluşturuldu: {os.path.abspath(test_file)}")
     
     try:
-        # Doğrudan transkript et
         result = model.transcribe(test_file)
         print(f"Transkripsiyon sonucu: {result['text']}")
     except Exception as e:
@@ -32,7 +28,6 @@ def test_whisper_direct():
         import traceback
         print(traceback.format_exc())
     
-    # Temizlik
     if os.path.exists(test_file):
         os.remove(test_file)
 

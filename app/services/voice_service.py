@@ -35,16 +35,16 @@ def transcribe_audio(audio_path: str, language: str = "tr") -> str:
     """
     model = get_whisper_model()
     
-    # Dosya yolunu mutlak yola çevir
+    
     import os
     absolute_path = os.path.abspath(audio_path)
     print(f"Kullanılacak mutlak dosya yolu: {absolute_path}")
     
-    # Dosyanın gerçekten var olup olmadığını kontrol et
+    
     if not os.path.exists(absolute_path):
         raise FileNotFoundError(f"Ses dosyası bulunamadı: {absolute_path}")
     
-    # Dosya boyutunu kontrol et
+    
     file_size = os.path.getsize(absolute_path)
     print(f"Dosya boyutu: {file_size} bytes")
     if file_size == 0:
@@ -59,9 +59,9 @@ def transcribe_audio(audio_path: str, language: str = "tr") -> str:
     try:
         # Transcribe
         result = model.transcribe(
-            absolute_path,  # Mutlak yol kullan
+            absolute_path,  
             language=language_code,
-            fp16=False  # Set to True if GPU is available
+            fp16=False  
         )
         return result["text"]
     except Exception as e:

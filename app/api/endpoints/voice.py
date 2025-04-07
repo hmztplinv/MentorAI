@@ -68,10 +68,10 @@ async def send_voice_message(
     
     response = await send_message(chat_request=chat_request, db=db)
     
-    # Transkribe edilmiş metni de ekleyerek yeni bir ChatResponse döndür
+    
     return ChatResponse(
         response=response.response,
-        transcribed_text=transcribed_text,  # Transkribe edilmiş metni ekle
+        transcribed_text=transcribed_text,  
         crisis_detected=response.crisis_detected,
         emergency_info=response.emergency_info
     )

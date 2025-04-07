@@ -1,4 +1,3 @@
-# tests/test_ollama_direct.py
 import requests
 import json
 import time
@@ -9,7 +8,7 @@ def test_ollama_direct():
     data = {
         "model": "phi4:latest",
         "messages": [{"role": "user", "content": "Merhaba, nasılsın?"}],
-        "stream": False  # Stream modunu açıkça kapatıyoruz
+        "stream": False  
     }
     
     print(f"Gönderilen veri: {json.dumps(data, ensure_ascii=False)}")
@@ -27,7 +26,6 @@ def test_ollama_direct():
         print(f"Yanıt süresi: {end_time - start_time:.2f} saniye")
         
         if response.status_code == 200:
-            # Ham yanıtı göster (ilk 200 karakter)
             print(f"Ham yanıt: {response.text[:200]}...")
             
             try:

@@ -14,10 +14,9 @@ from typing import List, Dict, Any, Generator
 import sys
 import os
 
-# Ana dizini sys.path'e ekle
+
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-# Uygulama modüllerini import et
 from app.core.config import settings
 from app.db.base import SessionLocal
 from app.services.ai_service import generate_ai_response, get_conversation_context
@@ -45,7 +44,7 @@ def test_direct_ollama_api():
         {"role": "user", "content": "Bugün kendimi çok stresli hissediyorum."}
     ]
     
-    # İstek gövdesi
+
     request_body = {
         "model": settings.MODEL_NAME,
         "messages": messages,
@@ -67,7 +66,7 @@ def test_direct_ollama_api():
             if response.status_code == 200:
                 try:
                     result = response.json()
-                    # Sadece ilk 50 karakteri göster
+                   
                     print(f"Yanıt: {result.get('message', {}).get('content', '')[:50]}...")
                 except Exception as e:
                     print(f"Yanıt işleme hatası: {str(e)}")
@@ -75,7 +74,7 @@ def test_direct_ollama_api():
                 print(f"API Hatası: {response.status_code} - {response.text}")
         
         times.append(time.time() - times[-1] if times else time.time())
-        time.sleep(1)  # API'yi boğmamak için kısa bir bekleme
+        time.sleep(1)  
     
     if times:
         print(f"Ortalama Ollama API yanıt süresi: {statistics.mean(times):.4f} saniye")
@@ -85,11 +84,10 @@ def test_ai_service():
     """AI servisi fonksiyonlarının performansını ölç"""
     print("\n=== AI Servisi Testi ===")
     
-    # Veritabanı oturumu oluştur
+    
     db = SessionLocal()
     
     try:
-        # Test için bir kullanıcı ve oturum bul veya oluştur
         user = db.query(User).first()
         if not user:
             print("Veritabanında kullanıcı bulunamadı. Lütfen önce bir kullanıcı oluşturun.")
@@ -103,11 +101,10 @@ def test_ai_service():
         print(f"Test kullanıcısı: {user.username} (ID: {user.id})")
         print(f"Test oturumu: ID: {session.id}, Terapi yaklaşımı: {session.therapy_approach}")
         
-        # Bağlam alma süresini ölç
+
         with timer("Konuşma bağlamı alma"):
             context = get_conversation_context(db, session_id=session.id)
         
-        # AI yanıtı oluşturma süresini ölç
         times = []
         for i in range(3):
             with timer(f"AI yanıtı oluşturma #{i+1}"):
@@ -115,7 +112,7 @@ def test_ai_service():
                 print(f"Yanıt: {response[:50]}...")  # Sadece ilk 50 karakteri göster
             
             times.append(time.time() - times[-1] if times else time.time())
-            time.sleep(1)  # API'yi boğmamak için kısa bir bekleme
+            time.sleep(1)  
         
         if times:
             print(f"Ortalama AI yanıt oluşturma süresi: {statistics.mean(times):.4f} saniye")
@@ -128,11 +125,9 @@ def test_chat_endpoint():
     """Chat API endpoint'inin performansını ölç"""
     print("\n=== Chat API Endpoint Testi ===")
     
-    # Veritabanı oturumu oluştur
     db = SessionLocal()
     
     try:
-        # Test için bir kullanıcı ve oturum bul
         user = db.query(User).first()
         if not user:
             print("Veritabanında kullanıcı bulunamadı. Lütfen önce bir kullanıcı oluşturun.")
@@ -143,14 +138,12 @@ def test_chat_endpoint():
             print("Veritabanında oturum bulunamadı. Lütfen önce bir oturum oluşturun.")
             return
         
-        # API isteği gövdesi
         request_body = {
             "session_id": session.id,
             "message": "Bugün kendimi biraz stresli hissediyorum, ne yapmamı önerirsin?",
             "is_voice": False
         }
         
-        # API endpoint URL
         api_url = f"http://localhost:8000{settings.API_V1_STR}/chat/send"
         
         with timer("Chat API Endpoint Çağrısı"):
@@ -173,7 +166,6 @@ def analyze_ai_service_code():
     """AI servisi kodunu analiz ederek potansiyel performans sorunlarını tespit et"""
     print("\n=== AI Servisi Kod Analizi ===")
     
-    # Kontrol edilecek fonksiyonların listesi
     check_points = [
         "generate_ai_response fonksiyonu yüksek timeout değeri (45 saniye) kullanıyor",
         "Ollama API yapılandırmasında stream=False kullanılıyor (stream=True daha hızlı olabilir)",
@@ -193,26 +185,21 @@ def profile_memory_usage():
         print("\n=== Bellek Kullanımı Profili ===")
         tracemalloc.start()
         
-        # Veritabanı oturumu oluştur
         db = SessionLocal()
         
         try:
-            # Var olan bir oturum bul
             session = db.query(Session).first()
             if not session:
                 print("Veritabanında oturum bulunamadı. Bellek profili oluşturulamadı.")
                 return
             
-            # AI yanıtı oluştur ve bellek kullanımını ölç
             context = get_conversation_context(db, session_id=session.id)
             response = generate_ai_response(db, session_id=session.id)
             
-            # Bellek istatistiklerini al
             current, peak = tracemalloc.get_traced_memory()
             print(f"Mevcut bellek kullanımı: {current / 1024**2:.2f} MB")
             print(f"En yüksek bellek kullanımı: {peak / 1024**2:.2f} MB")
             
-            # En çok bellek kullanan 5 bloğu göster
             snapshot = tracemalloc.take_snapshot()
             top_stats = snapshot.statistics('lineno')
             print("En çok bellek kullanan 5 kod bloğu:")
@@ -232,23 +219,18 @@ def main():
     print(f"Model: {settings.MODEL_NAME}")
     print(f"Ollama API: {settings.OLLAMA_API_BASE}")
     
-    # Doğrudan Ollama API'sini test et
     test_direct_ollama_api()
     
-    # AI servisini test et
     test_ai_service()
     
-    # Chat endpoint'ini test et (sunucu çalışıyorsa)
     try:
         test_chat_endpoint()
     except Exception as e:
         print(f"Chat endpoint testi başarısız: {str(e)}")
         print("Sunucunun çalıştığından emin olun (uvicorn app.main:app)")
     
-    # AI servisini analiz et
     analyze_ai_service_code()
     
-    # Bellek kullanımını profille
     profile_memory_usage()
     
     print("\n=== Performans Önerileri ===")

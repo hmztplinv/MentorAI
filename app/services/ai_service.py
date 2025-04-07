@@ -3,7 +3,7 @@ import json
 import re
 from sqlalchemy.orm import Session
 from typing import List, Tuple, Dict, Any
-import chromadb  # Doğru import burada
+import chromadb 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
@@ -257,7 +257,7 @@ def generate_ai_response(
     
 
     if "long_term_memory" in context and context["long_term_memory"]:
-        memory_points = context["long_term_memory"][:1]  # Sadece en alakalı hafıza noktası
+        memory_points = context["long_term_memory"][:1]  
         memory_content = "Kullanıcı hakkında önceki bilgiler:\n" + "\n".join(memory_points)
         messages.append({"role": "system", "content": memory_content})
     
@@ -265,7 +265,7 @@ def generate_ai_response(
     print(f"API isteği gönderiliyor: {settings.OLLAMA_API_BASE}/chat")
     print(f"Model: {settings.MODEL_NAME}")
     
-    import json  # JSON modülünü import et
+    import json  # 
     
 
     try:
@@ -321,9 +321,9 @@ def generate_ai_response(
             
 
 
-            if len(ai_response) > 100 and not crisis_mode:  # Kriz modunda hafıza depolamayı atla
+            if len(ai_response) > 100 and not crisis_mode:  
                 user_id = context.get("session", {}).get("user_id", 0)
-                if user_id > 0:  # Geçerli kullanıcı ID'si varsa
+                if user_id > 0:  
                     try:
                         store_in_long_term_memory(db, session_id, user_id, ai_response)
                     except Exception as e:

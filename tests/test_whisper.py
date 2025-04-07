@@ -1,26 +1,23 @@
-# tests/test_whisper.py dosyasını güncelle
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.services.voice_service import transcribe_audio
-import wave  # wav dosyası bilgilerini okumak için
+import wave  
 
 def create_test_wav_if_not_exists(filepath, duration=1.0, framerate=16000):
     """Eğer test ses dosyası yoksa oluştur"""
     if os.path.exists(filepath):
         return
     
-    # Klasörü oluştur
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     
-    # Boş bir wav dosyası oluştur
     nframes = int(duration * framerate)
     with wave.open(filepath, 'wb') as wf:
         wf.setnchannels(1)  # mono
         wf.setsampwidth(2)  # 16-bit
         wf.setframerate(framerate)
         wf.setnframes(nframes)
-        wf.writeframes(b'\x00' * nframes * 2)  # Sessiz ses
+        wf.writeframes(b'\x00' * nframes * 2)  
     
     print(f"Test ses dosyası oluşturuldu: {filepath}")
 
@@ -32,13 +29,11 @@ def test_whisper():
     
     print("Whisper Ses Tanıma Testi Başlatılıyor...")
     
-    # Test ses dosyaları
     test_files = [
         {"path": "tests/audio/turkish_sample.wav", "language": "tr"},
         {"path": "tests/audio/english_sample.wav", "language": "en"}
     ]
     
-    # Test dosyalarını oluştur
     for test in test_files:
         create_test_wav_if_not_exists(test["path"])
         print(f"Ses dosyası mutlak yolu: {os.path.abspath(test['path'])}")

@@ -13,19 +13,17 @@ app = FastAPI(
 # Set up CORS for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React frontend
+    allow_origins=["http://localhost:3000"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routes
-# app.include_router(api_router)
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 async def startup_event():
-    # Create DB tables on startup
     create_tables()
 
 @app.get("/")
