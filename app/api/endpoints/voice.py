@@ -55,18 +55,23 @@ async def send_voice_message(
     language: str = "tr",
     db: Session = Depends(get_db)
 ):
-    """
-    Transcribe audio and send as message in one step
-    """
     # Transcribe the audio
     transcription_response = await transcribe_voice(file=file, language=language, db=db)
+    transcribed_text = transcription_response["text"]
     
     # Forward to chat endpoint
     chat_request = ChatRequest(
         session_id=session_id,
-        message=transcription_response["text"],
+        message=transcribed_text,
         is_voice=True
     )
     
     response = await send_message(chat_request=chat_request, db=db)
-    return response
+    
+    # Transkribe edilmiş metni de ekleyerek yeni bir ChatResponse döndür
+    return ChatResponse(
+        response=response.response,
+        transcribed_text=transcribed_text,  # Transkribe edilmiş metni ekle
+        crisis_detected=response.crisis_detected,
+        emergency_info=response.emergency_info
+    )
