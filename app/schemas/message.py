@@ -43,5 +43,6 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    transcribed_text: Optional[str] = None
     crisis_detected: bool = False
     emergency_info: Optional[dict] = None
